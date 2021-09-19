@@ -1,0 +1,319 @@
+﻿@model IEnumerable<WebApplication3.Models.Employee>
+@{
+    ViewBag.Title = "Home Page";
+}
+<div style="margin-top:2rem">
+    <table id="DataGrid" class="easyui-datagrid" width="800px" singleSelect="true" >
+        <thead>
+            <tr>
+                <th data-options="field:'tnumber',width:50">Табельный номер</th>
+                <th data-options="field:'fio',width:250">ФИО</th>
+                <th data-options="field:'sex',width:80,formatter:formatsex">Пол</th>
+                <th data-options="field:'bdate',width:80">Дата рождения</th>
+                <th data-options="field:'staff',width:50">В штате</th>
+                <th data-options="field:'id',width:1,hidden:true"></th>
+            </tr>
+        </thead>
+    </table>
+    <a href="#" class="easyui-linkbutton" iconCls="icon-edit" onclick="editItem()">Редактивать текущую</a>
+    <a href="#" class="easyui-linkbutton" iconCls="icon-add" onclick="createItem()">Новый</a>
+    <a href="#" class="easyui-linkbutton" iconCls="icon-save" onclick="downloadFile()">В файл</a>
+    <form enctype="multipart/form-data" method="post">
+        <input id="selectfile" type="file" 
+               @*class="easyui-filebox" data-options="buttonText:'Загрузить из файла',onChange:onSelectFileForUpload"*@ 
+               style="width:400px"
+               onchange="onSelectFileForUpload()">
+        <input id="uploadfile" type="submit" style="display:none"/>
+    </form>
+
+</div>
+<!-- диалог редактирования записи, в жизни нужно выносить в какойнить бандл/партиал-->
+<div id="itemCard" class="easyui-dialog" title="My Dialog" style="width:400px;height:250px" data-options="iconCls:'icon-save',resizable:true,modal:true,closed: true">
+
+    <form id="data" method="post">
+        <div style="display:grid;grid-template-columns:1fr 1.5fr;grid-gap:0.5rem;">
+            <label for="tnumber">Табельный номер:</label>
+            <div>
+                <input id="dialog-edit-field-id" hidden>
+                <input id="dialog-edit-field-tnumber" class="easyui-validatebox" value="1" data-options="min:0,precision:0,validType:['number']" style="width:100%"
+                       >
+            </div>
+            <label for="fio">ФИО:</label>
+            <div><input id="dialog-edit-field-fio" class="easyui-validatebox" name="fio" data-options="required:true" style="width:100%" /></div>
+            <label for="sex">Пол:</label>
+            <div>
+                <input id="dialog-edit-field-sex" name="sex" class="easyui-combobox" style="width:100%"
+                       data-options="
+		            valueField: 'label',
+		            textField: 'value',
+		            data: sexVariant" />
+
+            </div>
+            <label for="bdate">Дата рождения:</label>
+            <div><input id="dialog-edit-field-bdate" class="easyui-datebox" required="required" style="width:100%"></div>
+            <label for="staff">В штате:</label>
+            <div><input id="dialog-edit-field-staff" type="checkbox" name="staff" value="1" label="В штате" style="width:1.3rem;height:1.3rem" onchange="changeStaff()"/></div>
+        </div>
+        <div style="text-align:right"><button onclick="saveData()" style="width:10rem;">Сохранить</button></div>
+    </form>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        var InitEmployeesList = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model));
+        var sexVariant = [{
+            label: '0',
+            value: 'Other'
+        }, {
+            label: '1',
+            value: 'Man'
+        }, {
+            label: '2',
+            value: 'Woman'
+            }];
+        function configureValidationtNumber(staffIsTrue) {
+            //не осилил я пока эту библиотеку после года активной работы с Vue.Js :(
+            /*
+            var validType = [];
+            if (staffIsTrue)
+                validType.push('number');
+            else {
+                validType.push('text');
+                validType.push('length:[0,0]');
+            }
+            var input = $('#tnumber');
+            input.validatebox('readonly', !staffIsTrue);
+            input.validatebox({
+                Option: {
+                    validType: validType
+                }
+            })
+            input.validatebox('validate');
+            */
+        }
+        function changeStaff() {
+            var checked = $('#dialog-edit-field-staff').prop('checked');
+            configureValidationtNumber(checked);
+        };
+        function parseDate(s) {
+            var y = s.substring(6, 10);
+            var m = s.substring(3, 5);
+            var d = s.substring(0, 2);
+            return Date.parse('' + m + '/' + d + '/' + y);
+        };
+        function loadDataToDialog(data) {
+            $('#dialog-edit-field-id').val(data.id);
+            $('#dialog-edit-field-tnumber').numberbox({ value: data.tnumber });
+            $('#dialog-edit-field-fio').val(data.fio);
+            $('#dialog-edit-field-fio').validatebox('validate');
+            $('#dialog-edit-field-sex').combobox('setValue', data.sex);
+            $('#dialog-edit-field-bdate').datebox('setValue', data.bdate);
+
+            $('#dialog-edit-field-staff').prop('checked', 0 + data.staff == 1);
+            configureValidationtNumber(0 + data.staff == 1);
+        }
+        function editItem() {
+            var currentData= $('#DataGrid').datagrid('getSelected');
+            if (currentData == null) {
+                alert('Не выбрана строка');
+                return;
+            };
+
+            loadDataToDialog(currentData);
+
+            $('#itemCard').dialog({ closed: false });
+        };
+
+
+        function createItem() {
+            $.ajax({
+                type: 'GET',
+                url: '/employee/create',
+                success: function (data, status, xhr) {
+                    if (status != 'success') {
+                        alert(status + '/' + data);
+                        return;
+                    }
+                    loadDataToDialog(data);
+                    $('#itemCard').dialog({ closed: false });
+                },
+                dataType: 'json',
+                error: function (xhr, status, error) {
+                    alert('' + status + '/' + error);
+                }
+
+            })
+        }
+
+        function reloadGrid(callback) {
+            $.ajax({
+                type: 'GET', url: '/employee/search',
+                success: function(data, status, xhr) {
+                    $('#DataGrid').datagrid({data:data});
+                    if (callback) {
+                        callback();
+                    }
+                },
+                dataType: 'json',
+                error: function (xhr, status, error) {
+                    alert('' + status + '/' + error);
+                }
+            })
+        };
+
+        function saveData() {
+            var id = $('#dialog-edit-field-id').val();
+            var bdate = $('#dialog-edit-field-bdate').datebox('getValue');
+            var fio = $('#dialog-edit-field-fio').val();
+            var tnumber = $('#dialog-edit-field-tnumber').val();
+            var sex = $('#dialog-edit-field-sex').combobox('getValue');
+            var staff = $('#dialog-edit-field-staff').prop('checked') ? 1: 0;
+
+            var dateAsTicks = parseDate(bdate);
+
+            if (isNaN(dateAsTicks)) {
+                alert('Нет возможности обработать формат даты');
+                return;
+            };
+            var parsetDate = new Date(dateAsTicks);
+            var datetoDB = '' + parsetDate.getFullYear() + '-' + (parsetDate.getMonth() + 1) + '-' + parsetDate.getDate() + 'T00:00:00';
+            $.ajax(
+                {
+                    type: 'POST',
+                    url: '/employee/' + (id == 0 ? 'create' : 'update'),
+                    data: {
+                        id: id,
+                        tnumber: tnumber,
+                        fio:fio,
+                        bdate: datetoDB,
+                        staff:staff,
+                    },
+                    success: function (data, status, xhr) {
+                        if (status == 'success') {
+                            reloadGrid(() => {
+                                $('#editButton').focus();
+                                $('#itemCard').dialog({ closed: true });
+                            });
+
+                            return;
+                        }
+                        alert(data);
+                    },
+                    dataType: 'json',
+                    error: function (xhr, status, error) {
+                        alert('' + status + '/' + error);
+                    }
+                }
+            )
+
+
+        }
+
+        function downloadFile() {
+            $.ajax({
+                type: 'GET', url: '/employee/search',
+                success: function (data, status, xhr) {
+                    if (status != 'success') {
+                        alert(status + ' / ' + data);
+                        return;
+
+                    }
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,true)], {
+                        type: 'text/plain'
+                    }));
+                    a.setAttribute('download', 'Employee.json');
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                },
+                dataType: 'json',
+                error: function (xhr, status, error) {
+                    alert('' + status + '/' + error);
+                }
+            })
+
+        }
+
+        function onSelectFileForUpload() {
+            var file = $('#selectfile')[0].files[0];
+            if (file) {
+                if (file.type != 'application/json') {
+                    alert('Неверный тип файла');
+                    return;
+                };
+                var formData = new FormData();
+                formData.append('file', file);
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/employee/uploadfile',
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    data: formData,
+                    dataType: 'json',
+                    success: function (data, status, xhr) {
+                        if (status != 'success') {
+                            alert(status + ' / ' + data);
+                            return;
+                        }
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(new Blob([data.result], {
+                            type: 'text/plain'
+                        }));
+                        a.setAttribute('download', data.filename);
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    
+                        console.log(data);
+                    },
+                    error: function (xhr, status, error) {
+                        alert('' + status + '/' + error);
+                    }
+                });
+            }
+        }
+
+
+        $.fn.datebox.defaults.formatter = function (date) {
+            var y = date.getFullYear();
+            var m = date.getMonth() + 1;
+            var d = date.getDate();
+
+            return '' +
+                   (d < 10 ? '0' : '') + d
+                   + (m < 10 ? '.0' : '.') +m
+                   + '.'+ y;
+        }
+        $.fn.datebox.defaults.parser = function (s) {
+
+
+            var t = parseDate(s);
+            if (!isNaN(t)) {
+                return new Date(t);
+            } else {
+                return new Date();
+            }
+        }
+
+        $('#DataGrid')
+            .datagrid({
+                onDblClickCell: function (index, field, value) {
+                    editItem();
+                }
+            })
+
+            .datagrid({ data: InitEmployeesList });
+
+        function formatsex(value, row, index) {
+            var sex = sexVariant.find(r => r.label == value);
+            if (sex == null)
+                return value;
+
+            return sex.value;
+        }
+
+    </script>
+}
