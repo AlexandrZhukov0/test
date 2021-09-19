@@ -113,6 +113,8 @@ namespace WebApplication3
             using (AppDbContext appDb = new AppDbContext())
             {
                 var tmp1 = appDb.Employees.Where(r => r.staff == 1).ToList();
+                //в рамках защиты от дублей в файле надо сделать защиту от дублей в файле
+                //я бы делал через группировку первичного списка, с дальнейшей обработкой тойлькопервой записи из группы
                 var ListForMerge =
                     from item in listOfEmployeeForUpload
                     join checkrecord in appDb.Employees.Where(r => r.staff == 1) on item.tnumber equals checkrecord.tnumber into joinresult //для тех у кого "в штате" == 0 табельный номер отустствует

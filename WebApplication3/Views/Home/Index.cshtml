@@ -3,7 +3,7 @@
     ViewBag.Title = "Home Page";
 }
 <div style="margin-top:2rem">
-    <table id="DataGrid" class="easyui-datagrid" width="800px" singleSelect="true" >
+    <table id="DataGrid" class="easyui-datagrid" width="800px" singleSelect="true">
         <thead>
             <tr>
                 <th data-options="field:'tnumber',width:50">Табельный номер</th>
@@ -17,14 +17,14 @@
     </table>
     <a href="#" class="easyui-linkbutton" iconCls="icon-edit" onclick="editItem()">Редактивать текущую</a>
     <a href="#" class="easyui-linkbutton" iconCls="icon-add" onclick="createItem()">Новый</a>
-    <a href="#" class="easyui-linkbutton" iconCls="icon-save" onclick="downloadFile()">В файл</a>
-    <form enctype="multipart/form-data" method="post">
-        <input id="selectfile" type="file" 
-               @*class="easyui-filebox" data-options="buttonText:'Загрузить из файла',onChange:onSelectFileForUpload"*@ 
-               style="width:400px"
-               onchange="onSelectFileForUpload()">
-        <input id="uploadfile" type="submit" style="display:none"/>
-    </form>
+    <a href="#" class="easyui-linkbutton" iconCls="icon-save" onclick="downloadFile()">Сохранить в файл</a>
+    <a href="#" class="easyui-linkbutton" onclick="uploadFile()">Загрузить из файла</a>
+    <!--не получается поднять файлбокс - почемуто теряет список файлов, никак не смог до них добратся-->
+    <input id="selectfile" type="file" iconCls="icon-open" style="margin-top:0.5rem;display:none"
+           @*class="easyui-filebox" data-options="buttonText:'Загрузить из файла',onChange:onSelectFileForUpload"*@
+           style="width:400px"
+           onchange="onSelectFileForUpload()">
+
 
 </div>
 <!-- диалог редактирования записи, в жизни нужно выносить в какойнить бандл/партиал-->
@@ -35,8 +35,7 @@
             <label for="tnumber">Табельный номер:</label>
             <div>
                 <input id="dialog-edit-field-id" hidden>
-                <input id="dialog-edit-field-tnumber" class="easyui-validatebox" value="1" data-options="min:0,precision:0,validType:['number']" style="width:100%"
-                       >
+                <input id="dialog-edit-field-tnumber" class="easyui-validatebox" value="1" data-options="min:0,precision:0,validType:['number']" style="width:100%">
             </div>
             <label for="fio">ФИО:</label>
             <div><input id="dialog-edit-field-fio" class="easyui-validatebox" name="fio" data-options="required:true" style="width:100%" /></div>
@@ -52,7 +51,8 @@
             <label for="bdate">Дата рождения:</label>
             <div><input id="dialog-edit-field-bdate" class="easyui-datebox" required="required" style="width:100%"></div>
             <label for="staff">В штате:</label>
-            <div><input id="dialog-edit-field-staff" type="checkbox" name="staff" value="1" label="В штате" style="width:1.3rem;height:1.3rem" onchange="changeStaff()"/></div>
+            <!--не смог разобратся с чекбоксом от езиуи, -->
+            <div><input id="dialog-edit-field-staff" type="checkbox" name="staff" value="1" label="В штате" style="width:1.3rem;height:1.3rem" onchange="changeStaff()" /></div>
         </div>
         <div style="text-align:right"><button onclick="saveData()" style="width:10rem;">Сохранить</button></div>
     </form>
@@ -72,7 +72,7 @@
             value: 'Woman'
             }];
         function configureValidationtNumber(staffIsTrue) {
-            //не осилил я пока эту библиотеку после года активной работы с Vue.Js :(
+            //не осилил я пока эту библиотеку после года активной работы с Vue.Js, сильно разные подходы :(
             /*
             var validType = [];
             if (staffIsTrue)
@@ -234,7 +234,9 @@
             })
 
         }
-
+        function uploadFile() {
+            $('#selectfile').click();
+        }
         function onSelectFileForUpload() {
             var file = $('#selectfile')[0].files[0];
             if (file) {
